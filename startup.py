@@ -1,22 +1,64 @@
+# Description: This script can be executed after startup. It checks for updates and upgrades the system if necessary.
+# Works on: Ubuntu 22.04
+# Author: @LucaDeppieri (Luca Deppieri)
+
+
+# Import the modules
 import subprocess
 from os.path import exists
 
 # Dictionary containing the ANSI escape codes for the colors used in the script
 colors = {
+    "green": "\033[32m",
     "yellow": "\033[33m",
     "cyan": "\033[36m",
     "reset": "\033[0m"
 }
 
 
-def upgrade():
-    # Run the command "sudo apt-get update" and save the output in the variable "output"
-    print(colors["cyan"] + "\n>  Searching for updates..." + colors["reset"])
-    subprocess.run(["sudo", "apt-get", "update", "|", "grep", "-q"])
+def progress_bar(progress, total):
+    percent = 100 * progress / float(total)
+    bar = '█' * int(percent) + '-' * (100 - int(percent))
+    print(f"\r|{bar}| {percent:.2f}%", end='')
+    if progress == total:
+        print(colors["green"] +
+              f"\r|{bar}| {percent:.2f}%" + colors["reset"], end='\n')
 
-    # Run the command "sudo apt-get upgrade -y" and save the output in the variable "output"
-    print(colors["cyan"] + "\n>  Upgrading..." + colors["reset"])
-    subprocess.run(["sudo", "apt-get", "upgrade", "-y"])
+
+def run_command(command, total):
+    process = subprocess.Popen(
+        command.split(), stdout=subprocess.PIPE, universal_newlines=True)
+    progress = 0
+    for _ in iter(process.stdout.readline, ''):
+        # Increment progress after each line of output
+        progress += 1
+        # Update the progress bar
+        progress_bar(progress, total)
+    # Wait for the subprocess to finish
+    process.wait()
+
+
+def upgrade():
+    global stop  # Make the variable "stop" global
+
+    print(colors["cyan"] + "\n>  Searching for updates..." + colors["reset"])
+    # Run the command "sudo apt-get update"
+    output = subprocess.check_output(
+        ["sudo", "apt-get", "update"]).decode("utf-8")
+    number_of_packages = 0
+    for line in output.splitlines():
+        if "packages can be upgraded" in line:
+            number_of_packages = int(line.split()[0])
+
+    if not number_of_packages:
+        print(colors["cyan"] + ">  No updates found!\n" + colors["reset"])
+        stop = True
+        return
+    else:
+        stop = False
+
+    # Run the command "sudo apt-get upgrade -y"
+    run_command("sudo apt-get upgrade -y")
     subprocess.run(["sudo", "apt-get", "autoremove", "-y"])
     output = subprocess.check_output(
         ["apt", "list", "--upgradable"]).decode("utf-8")
@@ -44,7 +86,6 @@ def upgrade():
 
 def clean():
     # Ask the user if he wants to clean the system
-    print(">  Upgrade completed!\n")
     user_input = input("Do you want to clean the system? (y/n): ")
 
     # If the user has entered "y", then run the commands "sudo apt-get clean" and "sudo apt-get autoremove --purge"
@@ -59,4 +100,5 @@ def clean():
 
 # Run the functions
 upgrade()
-clean()
+if not stop:
+    clean()
