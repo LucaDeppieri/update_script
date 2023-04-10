@@ -41,7 +41,7 @@ def run_command(command, total):
 def upgrade():
     global stop  # Make the variable "stop" global
 
-    print(colors["cyan"] + "\n>  Searching for updates..." + colors["reset"])
+    print(colors["cyan"] + "\n[run] " + colors["reset"] + "sudo apt update")
     # Run the command "sudo apt-get update"
     output = subprocess.check_output(
         ["sudo", "apt", "update"]).decode("utf-8")
@@ -51,7 +51,8 @@ def upgrade():
         if "packages can be upgraded" in line:
             number_of_packages = int(line.split()[0])
     if number_of_packages == 0:
-        print(colors["cyan"] + ">  No updates found!\n" + colors["reset"])
+        print(colors["cyan"] + "[info] " +
+              colors["reset"] + "No updates found!\n")
         stop = True
         return
     else:
@@ -59,8 +60,16 @@ def upgrade():
 
     # Run the command "sudo apt-get upgrade -y"
     # run_command("sudo apt-get upgrade -y", number_of_packages)
-    subprocess.run(["sudo", "apt-get", "upgrade", "-y"])
-    subprocess.run(["sudo", "apt-get", "autoremove", "-y"])
+    print(colors["cyan"] + "\n[run] " +
+          colors["reset"] + "sudo apt upgrade -y")
+    subprocess.run(
+        ["sudo", "apt-get", "upgrade", "-y"])
+    print(colors["cyan"] + "\n[run] " + colors["reset"] +
+          "sudo apt autoremove -y")
+    subprocess.run(
+        ["sudo", "apt-get", "autoremove", "-y"])
+    print(colors["cyan"] + "\n[run] " +
+          colors["reset"] + "apt list --upgradable")
     output = subprocess.check_output(
         ["apt", "list", "--upgradable"]).decode("utf-8")
 
@@ -70,19 +79,22 @@ def upgrade():
         for line in output.splitlines()[1:]:
             package_name = line.split("/")[0]
             packages_to_upgrade += package_name + "\n"
-        print(colors["cyan"] + ">  The following packages can be upgraded:")
-        print(colors["yellow"] + packages_to_upgrade + colors["cyan"])
+        print(colors["cyan"] + "[info] " + colors["reset"] +
+              "The following packages can be upgraded:")
+        print(colors["yellow"] + packages_to_upgrade + colors["reset"])
         user_input = input("Do you want to install them? (y/n): ")
+
         if user_input == "y":
-            print("> Upgrading..." + colors["reset"])
+            print(colors["cyan"] + "[info] " + "Upgrading..." + colors["reset"])
             ctr = 1
             for package_name in packages_to_upgrade.splitlines():
                 if package_name:
+                    print(colors["cyan"] + "\n[run] " + colors["reset"] + "sudo apt install -y " + package_name)
                     output = subprocess.check_output(
                         ["sudo", "apt-get", "install", "-y", package_name]).decode("utf-8")
                     progress_bar(ctr, number_of_packages)
                     ctr += 1
-            print(colors["cyan"] + "\n>  Upgrade completed!")
+            print(colors["cyan"] + "\n[info] " + colors["reset"] + "Upgrade completed!")
     else:
         print(colors["cyan"] + ">  No packages to upgrade!\n")
     del output  # Delete the variable "output"
@@ -95,10 +107,12 @@ def clean():
     # If the user has entered "y", then run the commands "sudo apt-get clean" and "sudo apt-get autoremove --purge"
     if user_input == "y":
         print("\n> Cleaning..." + colors["reset"])
-        subprocess.run(["sudo", "apt-get", "clean"])
-        subprocess.run(["sudo", "apt-get", "autoremove", "--purge"])
+        output = subprocess.check_output(
+            ["sudo", "apt-get", "clean"]).decode("utf-8")
+        output = subprocess.check_output(
+            ["sudo", "apt-get", "autoremove", "--purge"]).decode("utf-8")
         print(colors["cyan"] + "> All cleaned!\n")
-
+    del output  # Delete the variable "output"
     print(colors["reset"])
 
 
