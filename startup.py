@@ -25,19 +25,6 @@ def progress_bar(progress, total):
               f"\r|{bar}| {percent:.2f}%" + colors["reset"], end='\n')
 
 
-def run_command(command, total):
-    process = subprocess.Popen(
-        command.split(), stdout=subprocess.PIPE, universal_newlines=True)
-    progress = 0
-    for _ in iter(process.stdout.readline, ''):
-        # Increment progress after each line of output
-        progress += 1
-        # Update the progress bar
-        progress_bar(progress, total)
-    # Wait for the subprocess to finish
-    process.wait()
-
-
 def upgrade():
     global stop  # Make the variable "stop" global
 
@@ -61,7 +48,6 @@ def upgrade():
         stop = False
 
     # Run the command "sudo apt-get upgrade -y"
-    # run_command("sudo apt-get upgrade -y", number_of_packages)
     print(colors["cyan"] + "\n[run] " +
           colors["reset"] + "sudo apt-get upgrade -y")
     subprocess.run(["sudo", "apt-get", "upgrade", "-y"])
